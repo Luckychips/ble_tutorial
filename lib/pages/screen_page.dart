@@ -1,11 +1,14 @@
+// core
 import 'dart:async';
-
+// lib
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+// this
+import 'package:ble_tutorial/pages/scan_page.dart';
+import 'package:ble_tutorial/utils/debug_logger.dart';
 
-import './between_page.dart';
-
-class ScreenPage extends StatefulWidget{
+class ScreenPage extends StatefulWidget {
   const ScreenPage({super.key});
 
   @override
@@ -26,9 +29,14 @@ class _ScreenPageState extends State<ScreenPage> {
   }
 
   Future<void> checkBLEPermission() async {
+    if (!await FlutterBluePlus.isSupported) {
+      logger.d('Bluetooth not supported by this device.');
+      return;
+    }
+
     final status = await Permission.bluetoothScan.status;
     if (status.isDenied) {
-      print("Denied");
+      logger.d('Denied');
       await Permission.bluetoothScan.request();
     }
   }
@@ -38,7 +46,7 @@ class _ScreenPageState extends State<ScreenPage> {
       Future.delayed(const Duration(milliseconds: 600), () {
         if (mounted) {
           Navigator.pushReplacement(context,
-              MaterialPageRoute(builder: (context) => const BetweenPage()));
+              MaterialPageRoute(builder: (context) => const ScanPage()));
         }
       });
     });
@@ -46,9 +54,11 @@ class _ScreenPageState extends State<ScreenPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       body: Center(
-        child: Text('Say Hi!'),
+        child: Column(
+          children: [],
+        ),
       ),
     );
   }
