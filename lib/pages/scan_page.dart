@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:convert';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:loading_indicator/loading_indicator.dart';
+
+import 'package:ble_tutorial/utils/debug_logger.dart';
 
 const List<Color> _kDefaultRainbowColors = [
   Colors.red,
@@ -28,7 +31,10 @@ class _BetweenPageState extends State<ScanPage> {
   late List<ScanResult> _scanResults = [];
   late StreamSubscription<List<ScanResult>> _scanResultsSubscription;
   late StreamSubscription<bool> _isScanningSubscription;
+  late StreamSubscription<BluetoothConnectionState> _connectionStateSubscription;
+  late StreamSubscription<List<int>> _lastValueSubscription;
   late bool _isScanning = false;
+  late BluetoothDevice? _bluetoothDevice;
 
   @override
   void initState() {
@@ -92,6 +98,7 @@ class _BetweenPageState extends State<ScanPage> {
             onPressed: startScan,
             child: const Text('Start Scan'),
           ),
+          const SizedBox(height: 24),
           Expanded(
             child: ListView.builder(
               itemCount: _scanResults.length,
@@ -102,7 +109,19 @@ class _BetweenPageState extends State<ScanPage> {
                       ? 'Unknown Device'
                       : device.platformName),
                   subtitle: Text(device.id.toString()),
-                  onTap: () => {},
+                  onTap: () async {
+                    try {
+                      await FlutterBluePlus.stopScan();
+                      await device.connect(mtu: null, timeout: const Duration(hours: 10));
+                      if (mounted) {
+                        setState(() {
+                          _bluetoothDevice = device;
+                        });
+                      }
+                    } catch (e) {
+                      logger.d('$e');
+                    }
+                  },
                 );
               },
             ),
