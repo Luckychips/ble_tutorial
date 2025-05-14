@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:convert';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:loading_indicator/loading_indicator.dart';
+import 'package:provider/provider.dart';
 
+import 'package:ble_tutorial/pages/connected_page.dart';
+import 'package:ble_tutorial/states/providers/bluetooth_model.dart';
 import 'package:ble_tutorial/utils/debug_logger.dart';
 
 const List<Color> _kDefaultRainbowColors = [
@@ -19,7 +20,6 @@ const List<Color> _kDefaultRainbowColors = [
   Colors.purple,
 ];
 
-
 class ScanPage extends StatefulWidget {
   const ScanPage({super.key});
 
@@ -31,10 +31,7 @@ class _BetweenPageState extends State<ScanPage> {
   late List<ScanResult> _scanResults = [];
   late StreamSubscription<List<ScanResult>> _scanResultsSubscription;
   late StreamSubscription<bool> _isScanningSubscription;
-  late StreamSubscription<BluetoothConnectionState> _connectionStateSubscription;
-  late StreamSubscription<List<int>> _lastValueSubscription;
   late bool _isScanning = false;
-  late BluetoothDevice? _bluetoothDevice;
 
   @override
   void initState() {
@@ -61,12 +58,60 @@ class _BetweenPageState extends State<ScanPage> {
         setState(() {});
       }
     });
+
+
   }
 
   @override
   void dispose() {
+    _scanResultsSubscription.cancel();
     _isScanningSubscription.cancel();
     super.dispose();
+  }
+
+  Future<bool> toConnect(BluetoothDevice d) async {
+    bool isConnected = false;
+    try {
+      await d.connect(mtu: null, timeout: const Duration(hours: 10));
+      List<BluetoothService> discoverList = await d.discoverServices();
+      if (discoverList.isNotEmpty) {
+        isConnected = true;
+      }
+    } catch (e) {
+      isConnected = false;
+    }
+
+    return isConnected;
+  }
+
+  Future<bool> toBonding(BluetoothDevice d) async {
+    bool isBonded = false;
+    if (Platform.isAndroid) {
+      try {
+        await d.createBond();
+        isBonded = true;
+      } catch (e) {
+        isBonded = false;
+      }
+    } else {
+      isBonded = true;
+    }
+
+    return isBonded;
+  }
+
+
+  void select(BluetoothDevice d) async {
+    await FlutterBluePlus.stopScan();
+    if (await toConnect(d) && await toBonding(d)) {
+      if (mounted) {
+        setState(() {
+          context.read<BluetoothModel>().device = d;
+        });
+
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ConnectedPage()));
+      }
+    }
   }
 
   Future startScan() async {
@@ -81,8 +126,12 @@ class _BetweenPageState extends State<ScanPage> {
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
-    return Scaffold(body: _isScanning ?
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text('Scan Page', textAlign: TextAlign.center),
+      ),
+      body: _isScanning ?
       const Center(
         child: LoadingIndicator(
           indicatorType: Indicator.ballScaleMultiple,
@@ -105,19 +154,11 @@ class _BetweenPageState extends State<ScanPage> {
               itemBuilder: (context, index) {
                 final device = _scanResults[index].device;
                 return ListTile(
-                  title: Text(device.platformName.isEmpty
-                      ? 'Unknown Device'
-                      : device.platformName),
+                  title: Text(device.platformName.isEmpty ? 'Unknown Device' : device.platformName),
                   subtitle: Text(device.id.toString()),
                   onTap: () async {
                     try {
-                      await FlutterBluePlus.stopScan();
-                      await device.connect(mtu: null, timeout: const Duration(hours: 10));
-                      if (mounted) {
-                        setState(() {
-                          _bluetoothDevice = device;
-                        });
-                      }
+                      select(device);
                     } catch (e) {
                       logger.d('$e');
                     }

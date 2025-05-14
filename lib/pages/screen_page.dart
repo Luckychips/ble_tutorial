@@ -45,8 +45,7 @@ class _ScreenPageState extends State<ScreenPage> {
     checkBLEPermission().then((_) {
       Future.delayed(const Duration(milliseconds: 600), () {
         if (mounted) {
-          Navigator.pushReplacement(context,
-              MaterialPageRoute(builder: (context) => const ScanPage()));
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ScanPage()));
         }
       });
     });
@@ -54,8 +53,12 @@ class _ScreenPageState extends State<ScreenPage> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text('', textAlign: TextAlign.center),
+      ),
+      body: const Center(
         child: Column(
           children: [],
         ),

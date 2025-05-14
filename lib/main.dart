@@ -1,14 +1,21 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 
-import './pages/screen_page.dart';
+import 'package:ble_tutorial/pages/screen_page.dart';
+import 'package:ble_tutorial/states/providers/bluetooth_model.dart';
 
 void main() {
   FlutterBluePlus.setLogLevel(LogLevel.verbose, color: true);
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => BluetoothModel()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -42,7 +49,7 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
     checkBLEPermission().then((_) {
       if (mounted) {
-
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ScreenPage()));
       }
     });
   }
@@ -84,7 +91,7 @@ class _MyHomePageState extends State<MyHomePage> {
               child: widget!,
             );
           },
-          home: const ScreenPage(),
+          home: const Text('Greeting'),
         ),
       ),
     );
