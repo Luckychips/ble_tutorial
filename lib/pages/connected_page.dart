@@ -2,8 +2,9 @@
 import 'dart:async';
 import 'dart:convert';
 // lib
-import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 // this
 import 'package:ble_tutorial/states/providers/bluetooth_model.dart';
@@ -78,6 +79,7 @@ class _ConnectedPageState extends State<ConnectedPage> {
 
       List<BluetoothCharacteristic> characteristics = service!.characteristics;
       await characteristics[0].write(utf8.encode('${_cmdController.text}@'), withoutResponse: characteristics[0].properties.writeWithoutResponse);
+      _cmdController.text = '';
     });
   }
 
@@ -93,7 +95,7 @@ class _ConnectedPageState extends State<ConnectedPage> {
           children: [
             const SizedBox(height: 24),
             SizedBox(
-              width: 200,
+              width: MediaQuery.of(context).size.width * 0.7,
               height: 60,
               child: TextField(
                 controller: _cmdController,
@@ -113,7 +115,13 @@ class _ConnectedPageState extends State<ConnectedPage> {
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: toListen,
-              child: const Text('Send'),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
+                  child: Text(
+                    'Send',
+                    style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w300)
+                  ),
+                )
             ),
             const SizedBox(height: 36),
             Text(_text),

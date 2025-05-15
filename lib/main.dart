@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
@@ -74,24 +75,28 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title, textAlign: TextAlign.center),
-      ),
-      body: Center(
-        child: MaterialApp(
-          title: 'DEMO',
-          debugShowCheckedModeBanner: false,
-          builder: (context, widget) {
-            return MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                textScaler: const TextScaler.linear(1.0),
-              ),
-              child: widget!,
-            );
-          },
-          home: const Text('Greeting'),
+    return ScreenUtilInit(
+      designSize: const Size(393, 852),
+      minTextAdapt: true,
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+          title: Text(widget.title, textAlign: TextAlign.center),
+        ),
+        body: Center(
+          child: MaterialApp(
+            title: 'DEMO',
+            debugShowCheckedModeBanner: false,
+            builder: (context, widget) {
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: const TextScaler.linear(1.0),
+                ),
+                child: widget!,
+              );
+            },
+            home: const Text('Greeting'),
+          ),
         ),
       ),
     );

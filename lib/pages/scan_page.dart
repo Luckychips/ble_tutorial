@@ -1,11 +1,13 @@
+// core
 import 'dart:async';
 import 'dart:io';
-
-import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+// lib
 import 'package:flutter/material.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:provider/provider.dart';
-
+// this
 import 'package:ble_tutorial/pages/connected_page.dart';
 import 'package:ble_tutorial/states/providers/bluetooth_model.dart';
 import 'package:ble_tutorial/utils/debug_logger.dart';
@@ -145,7 +147,13 @@ class _BetweenPageState extends State<ScanPage> {
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: startScan,
-            child: const Text('Start Scan'),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
+              child: Text(
+                'Start Scan',
+                style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w300)
+              ),
+            )
           ),
           const SizedBox(height: 24),
           Expanded(
