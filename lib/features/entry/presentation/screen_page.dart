@@ -5,8 +5,8 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 // this
-import 'package:ble_tutorial/pages/scan_page.dart';
-import 'package:ble_tutorial/utils/debug_logger.dart';
+import 'package:ble_tutorial/core/utils/debug_logger.dart';
+import 'package:ble_tutorial/features/bluetooth/presentation/scan_page.dart';
 
 class ScreenPage extends StatefulWidget {
   const ScreenPage({super.key});

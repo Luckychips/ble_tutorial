@@ -4,13 +4,14 @@ import 'dart:io';
 // lib
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:loading_indicator/loading_indicator.dart';
-import 'package:provider/provider.dart';
 // this
-import 'package:ble_tutorial/pages/connected_page.dart';
-import 'package:ble_tutorial/states/providers/bluetooth_model.dart';
-import 'package:ble_tutorial/utils/debug_logger.dart';
+import 'package:ble_tutorial/core/utils/debug_logger.dart';
+import 'package:ble_tutorial/features/bluetooth/application/bluetooth_device_controller.dart';
+import 'package:ble_tutorial/features/bluetooth/presentation/connected_page.dart';
+import 'package:ble_tutorial/features/bluetooth/provider.dart';
 
 const List<Color> _kDefaultRainbowColors = [
   Colors.red,
@@ -22,30 +23,35 @@ const List<Color> _kDefaultRainbowColors = [
   Colors.purple,
 ];
 
-class ScanPage extends StatefulWidget {
+class ScanPage extends ConsumerStatefulWidget {
   const ScanPage({super.key});
 
   @override
-  State<ScanPage> createState() => _BetweenPageState();
+  ConsumerState<ScanPage> createState() => _ScanPageState();
 }
 
-class _BetweenPageState extends State<ScanPage> {
+class _ScanPageState extends ConsumerState<ScanPage> {
+  late BluetoothDeviceController controller;
   late List<ScanResult> _scanResults = [];
   late StreamSubscription<List<ScanResult>> _scanResultsSubscription;
   late StreamSubscription<bool> _isScanningSubscription;
   late bool _isScanning = false;
 
+  final v1List = ['bladder', 'medi'];
+  final v2List = ['2025aamay099'];
+
   @override
   void initState() {
     super.initState();
+    controller = ref.read(bluetoothDeviceControllerProvider.notifier);
+
     _scanResultsSubscription = FlutterBluePlus.scanResults.listen((peripheral) async {
       _scanResults.clear();
-
       if (peripheral.isNotEmpty) {
         for (var x in peripheral) {
           BluetoothDevice device = x.device;
           String deviceName = device.platformName.toLowerCase();
-          if (deviceName.contains('bladder') || deviceName.contains('medi')) {
+          if (v1List.any(deviceName.contains) || v2List.any(deviceName.contains)) {
             if (_scanResults.indexWhere((element) => element.device.remoteId == x.device.remoteId) < 0) {
               _scanResults.add(x);
             }
@@ -60,8 +66,6 @@ class _BetweenPageState extends State<ScanPage> {
         setState(() {});
       }
     });
-
-
   }
 
   @override
@@ -108,7 +112,14 @@ class _BetweenPageState extends State<ScanPage> {
     if (await toConnect(d) && await toBonding(d)) {
       if (mounted) {
         setState(() {
-          context.read<BluetoothModel>().device = d;
+          String deviceName = d.platformName.toLowerCase();
+          if (v1List.any(deviceName.contains)) {
+            controller.setFirmwareMaintainVersion(1);
+          } else if (v2List.any(deviceName.contains)) {
+            controller.setFirmwareMaintainVersion(2);
+          }
+
+          controller.setDevice(d);
         });
 
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ConnectedPage()));

@@ -2,51 +2,70 @@
 import 'dart:async';
 import 'dart:convert';
 // lib
+import 'package:ble_tutorial/features/bluetooth/application/bluetooth_device_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:provider/provider.dart';
 // this
-import 'package:ble_tutorial/states/providers/bluetooth_model.dart';
+import 'package:ble_tutorial/core/utils/command_parser.dart';
+import 'package:ble_tutorial/features/bluetooth/provider.dart';
 
-class ConnectedPage extends StatefulWidget {
+class ConnectedPage extends ConsumerStatefulWidget {
   const ConnectedPage({super.key});
 
   @override
-  State<ConnectedPage> createState() => _ConnectedPageState();
+  ConsumerState<ConnectedPage> createState() => _ConnectedPageState();
 }
 
-class _ConnectedPageState extends State<ConnectedPage> {
+class _ConnectedPageState extends ConsumerState<ConnectedPage> {
   static const String suid = '6E400001-B5A3-F393-E0A9-E50E24DCCA9E'; // nordic uart service uuid
-
+  late BluetoothDeviceController controller;
+  late int _firmwareMaintainVersion;
   late BluetoothDevice _device;
   late StreamSubscription<BluetoothConnectionState> _connectionStateSubscription;
   late StreamSubscription<List<int>> _lastValueSubscription;
 
   final _cmdController = TextEditingController();
   String _text = '......';
+  String _responseText = '';
+  bool _isMatchedCommand = false;
 
   @override
   void initState() {
     super.initState();
-    _device = context.read<BluetoothModel>().device;
+    controller = ref.read(bluetoothDeviceControllerProvider.notifier);
+    _firmwareMaintainVersion = controller.getFirmwareMaintainVersion();
+    _device = controller.getDevice()!;
     _connectionStateSubscription = _device.connectionState.listen((state) async {
       if (state == BluetoothConnectionState.connected) {
         Future.delayed(const Duration(milliseconds: 1500), () async {
-          BluetoothService? service;
-          for (var x in await _device.discoverServices()) {
-            if (x.uuid.toString().toUpperCase() == suid) {
-              service = x;
-              break;
-            }
-          }
-
+          BluetoothService? service = await getConnectedService();
           List<BluetoothCharacteristic> characteristics = service!.characteristics;
           characteristics[1].setNotifyValue(true);
           _lastValueSubscription = characteristics[1].lastValueStream.listen((value) {
-            String converted = utf8.decode(value).trimRight();
+            String converted = '';
+            switch (_firmwareMaintainVersion) {
+              case 1:
+                converted = utf8.decode(value).trimRight();
+                break;
+              case 2:
+                List<int> asciiBytes = value.where((byte) => byte >= 0 && byte <= 127).toList();
+                converted = ascii.decode(asciiBytes);
+                break;
+            }
+
+            _isMatchedCommand = false;
             if (mounted && converted.isNotEmpty) {
-              setState(() { _text = converted; });
+              setState(() {
+                _text = converted;
+                if (isNormalReceived(_cmdController.text.codeUnits, value)) {
+                  _isMatchedCommand = true;
+                  final List<int> trimmed = value.sublist(4, value.length - 2);
+                  _responseText = '${convertToInt16BigEndian(trimmed)}';
+                  _cmdController.text = '';
+                }
+              });
             }
           });
 
@@ -55,7 +74,7 @@ class _ConnectedPageState extends State<ConnectedPage> {
       }
 
       if (state == BluetoothConnectionState.disconnected) {
-        print('disconnected');
+
       }
     });
   }
@@ -67,19 +86,40 @@ class _ConnectedPageState extends State<ConnectedPage> {
     _lastValueSubscription.cancel();
   }
 
-  void toListen() {
-    Future.delayed(const Duration(milliseconds: 500), () async {
-      BluetoothService? service;
-      for (var x in await _device.discoverServices()) {
+  Future<BluetoothService?> getConnectedService() async {
+    BluetoothService? service;
+    List<BluetoothService> discoverList = await _device.discoverServices();
+    for (var x in discoverList) {
+      if (_firmwareMaintainVersion == 1) {
         if (x.uuid.toString().toUpperCase() == suid) {
           service = x;
-          break;
+        }
+      } else if (_firmwareMaintainVersion == 2) {
+        if (x.uuid.toString().toUpperCase() == suid) {
+          service = x;
         }
       }
+    }
 
+    return service;
+  }
+
+  void toListen() {
+    Future.delayed(const Duration(milliseconds: 500), () async {
+      BluetoothService? service = await getConnectedService();
       List<BluetoothCharacteristic> characteristics = service!.characteristics;
-      await characteristics[0].write(utf8.encode('${_cmdController.text}@'), withoutResponse: characteristics[0].properties.writeWithoutResponse);
-      _cmdController.text = '';
+      switch (_firmwareMaintainVersion) {
+        case 1:
+          await characteristics[0].write(utf8.encode('${_cmdController.text}@'), withoutResponse: characteristics[0].properties.writeWithoutResponse);
+          break;
+        case 2:
+          List<int> bytes = _cmdController.text.codeUnits;
+          if (isReadyCommand(bytes)) {
+            await characteristics[0].write(bytes, withoutResponse: characteristics[0].properties.writeWithoutResponse);
+          }
+
+          break;
+      }
     });
   }
 
@@ -125,6 +165,8 @@ class _ConnectedPageState extends State<ConnectedPage> {
             ),
             const SizedBox(height: 36),
             Text(_text),
+            const SizedBox(height: 12),
+            Text('$_isMatchedCommand : $_responseText'),
           ],
         ),
       ),
