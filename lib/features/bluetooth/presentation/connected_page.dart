@@ -34,48 +34,50 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
   @override
   void initState() {
     super.initState();
-    controller = ref.read(bluetoothDeviceControllerProvider.notifier);
-    _firmwareMaintainVersion = controller.getFirmwareMaintainVersion();
-    _device = controller.getDevice()!;
-    _connectionStateSubscription = _device.connectionState.listen((state) async {
-      if (state == BluetoothConnectionState.connected) {
-        Future.delayed(const Duration(milliseconds: 1500), () async {
-          BluetoothService? service = await getConnectedService();
-          List<BluetoothCharacteristic> characteristics = service!.characteristics;
-          characteristics[1].setNotifyValue(true);
-          _lastValueSubscription = characteristics[1].lastValueStream.listen((value) {
-            String converted = '';
-            switch (_firmwareMaintainVersion) {
-              case 1:
-                converted = utf8.decode(value).trimRight();
-                break;
-              case 2:
-                List<int> asciiBytes = value.where((byte) => byte >= 0 && byte <= 127).toList();
-                converted = ascii.decode(asciiBytes);
-                break;
-            }
+    Future.microtask(() {
+      controller = ref.read(bluetoothDeviceControllerProvider.notifier);
+      _firmwareMaintainVersion = controller.getFirmwareMaintainVersion();
+      _device = controller.getDevice()!;
+      _connectionStateSubscription = _device.connectionState.listen((state) async {
+        if (state == BluetoothConnectionState.connected) {
+          Future.delayed(const Duration(milliseconds: 1500), () async {
+            BluetoothService? service = await getConnectedService();
+            List<BluetoothCharacteristic> characteristics = service!.characteristics;
+            characteristics[1].setNotifyValue(true);
+            _lastValueSubscription = characteristics[1].lastValueStream.listen((value) {
+              String converted = '';
+              switch (_firmwareMaintainVersion) {
+                case 1:
+                  converted = utf8.decode(value).trimRight();
+                  break;
+                case 2:
+                  List<int> asciiBytes = value.where((byte) => byte >= 0 && byte <= 127).toList();
+                  converted = ascii.decode(asciiBytes);
+                  break;
+              }
 
-            _isMatchedCommand = false;
-            if (mounted && converted.isNotEmpty) {
-              setState(() {
-                _text = converted;
-                if (isNormalReceived(_cmdController.text.codeUnits, value)) {
-                  _isMatchedCommand = true;
-                  final List<int> trimmed = value.sublist(4, value.length - 2);
-                  _responseText = '${convertToInt16BigEndian(trimmed)}';
-                  _cmdController.text = '';
-                }
-              });
-            }
+              _isMatchedCommand = false;
+              if (mounted && converted.isNotEmpty) {
+                setState(() {
+                  _text = converted;
+                  if (isNormalReceived(_cmdController.text.codeUnits, value)) {
+                    _isMatchedCommand = true;
+                    final List<int> trimmed = value.sublist(4, value.length - 2);
+                    _responseText = '${convertToInt16BigEndian(trimmed)}';
+                    _cmdController.text = '';
+                  }
+                });
+              }
+            });
+
+            _device.cancelWhenDisconnected(_lastValueSubscription);
           });
+        }
 
-          _device.cancelWhenDisconnected(_lastValueSubscription);
-        });
-      }
+        if (state == BluetoothConnectionState.disconnected) {
 
-      if (state == BluetoothConnectionState.disconnected) {
-
-      }
+        }
+      });
     });
   }
 
