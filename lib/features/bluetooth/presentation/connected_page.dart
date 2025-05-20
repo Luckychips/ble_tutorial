@@ -20,24 +20,24 @@ class ConnectedPage extends ConsumerStatefulWidget {
 
 class _ConnectedPageState extends ConsumerState<ConnectedPage> {
   static const String suid = '6E400001-B5A3-F393-E0A9-E50E24DCCA9E'; // nordic uart service uuid
-  late BluetoothDeviceController controller;
+  late BluetoothDeviceController _controller;
   late int _firmwareMaintainVersion;
   late BluetoothDevice _device;
   late StreamSubscription<BluetoothConnectionState> _connectionStateSubscription;
   late StreamSubscription<List<int>> _lastValueSubscription;
 
   final _cmdController = TextEditingController();
-  String _text = '......';
-  String _responseText = '';
-  bool _isMatchedCommand = false;
+  bool _isNormal = false;
+  String _response = '......';
+  String _data = '';
 
   @override
   void initState() {
     super.initState();
     Future.microtask(() {
-      controller = ref.read(bluetoothDeviceControllerProvider.notifier);
-      _firmwareMaintainVersion = controller.getFirmwareMaintainVersion();
-      _device = controller.getDevice()!;
+      _controller = ref.read(bluetoothDeviceControllerProvider.notifier);
+      _firmwareMaintainVersion = _controller.getFirmwareMaintainVersion();
+      _device = _controller.getDevice()!;
       _connectionStateSubscription = _device.connectionState.listen((state) async {
         if (state == BluetoothConnectionState.connected) {
           Future.delayed(const Duration(milliseconds: 1500), () async {
@@ -56,14 +56,31 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
                   break;
               }
 
-              _isMatchedCommand = false;
+              _isNormal = false;
               if (mounted && converted.isNotEmpty) {
                 setState(() {
-                  _text = converted;
+                  // _response = converted;
+                  List<String> messages = converted.split(':');
+                  if (messages.isNotEmpty) {
+                    _response = messages[0];
+                  }
+
                   if (isNormalReceived(_cmdController.text.codeUnits, value)) {
-                    _isMatchedCommand = true;
+                    _isNormal = true;
                     final List<int> trimmed = value.sublist(4, value.length - 2);
-                    _responseText = '${convertToInt16BigEndian(trimmed)}';
+                    if (hasAscii(_cmdController.text)) {
+                      _data = String.fromCharCodes(trimmed);
+                    } else {
+                      _data = '${convertToInt16BigEndian(trimmed)}';
+                    }
+                    // if (trimmed.length >= 5) {
+                      // if (isAsciiCharacter(trimmed[5])) {
+                      //   _data = String.fromCharCodes(trimmed);
+                      // } else {
+                      //   _data = '${convertToInt16BigEndian(trimmed)}';
+                      // }
+                    // }
+
                     _cmdController.text = '';
                   }
                 });
@@ -166,9 +183,20 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
                 )
             ),
             const SizedBox(height: 36),
-            Text(_text),
+            Text(
+              _response,
+              style: TextStyle(fontSize: 20.sp),
+            ),
             const SizedBox(height: 12),
-            Text('$_isMatchedCommand : $_responseText'),
+            Text(
+              '$_isNormal',
+              style: TextStyle(fontSize: 20.sp),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _data,
+              style: TextStyle(fontSize: 16.sp)
+            ),
           ],
         ),
       ),

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:permission_handler/permission_handler.dart';
 // this
+import 'package:ble_tutorial/features/entry/presentation/pager_page.dart';
 import 'package:ble_tutorial/features/entry/presentation/screen_page.dart';
 
 void main() {
@@ -43,6 +44,7 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
     checkBLEPermission().then((_) {
       if (mounted) {
+        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => PagerPage()));
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ScreenPage()));
       }
     });

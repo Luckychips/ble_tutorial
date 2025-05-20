@@ -49,3 +49,11 @@ List<int> convertToInt16BigEndian(List<int> bytes) {
 
   return result;
 }
+
+bool isAsciiCharacter(int c) {
+  return c >= 0 && c <= 127;
+}
+
+bool hasAscii(String command) {
+  return ['ssv', 'srz'].any((word) => command.contains(word));
+}

@@ -38,13 +38,17 @@ class _ScanPageState extends ConsumerState<ScanPage> {
   late bool _isScanning = false;
 
   final v1List = ['bladder', 'medi'];
-  final v2List = ['2025aamay099'];
+  final v2List = ['2025aamay099', '2025aamay002'];
+
+  // final regex = RegExp(
+  //   r'^[0-9]{4}[A-Z]{2}(January|February|March|April|May|June|July|August|September|October|November|December)[0-9]{3}$',
+  //   caseSensitive: false,
+  // );
 
   @override
   void initState() {
     super.initState();
     controller = ref.read(bluetoothDeviceControllerProvider.notifier);
-
     _scanResultsSubscription = FlutterBluePlus.scanResults.listen((peripheral) async {
       _scanResults.clear();
       if (peripheral.isNotEmpty) {
