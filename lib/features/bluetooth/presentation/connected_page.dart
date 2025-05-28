@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 // this
 import 'package:ble_tutorial/core/utils/command_parser.dart';
+import 'package:ble_tutorial/core/utils/to_number.dart';
 import 'package:ble_tutorial/features/bluetooth/provider.dart';
 
 class ConnectedPage extends ConsumerStatefulWidget {
@@ -73,13 +74,6 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
                     } else {
                       _data = '${convertToInt16BigEndian(trimmed)}';
                     }
-                    // if (trimmed.length >= 5) {
-                      // if (isAsciiCharacter(trimmed[5])) {
-                      //   _data = String.fromCharCodes(trimmed);
-                      // } else {
-                      //   _data = '${convertToInt16BigEndian(trimmed)}';
-                      // }
-                    // }
 
                     _cmdController.text = '';
                   }
@@ -132,7 +126,34 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
           await characteristics[0].write(utf8.encode('${_cmdController.text}@'), withoutResponse: characteristics[0].properties.writeWithoutResponse);
           break;
         case 2:
-          List<int> bytes = _cmdController.text.codeUnits;
+          List<int> encoded = utf8.encode(_cmdController.text);
+          List<int> bytes = [];
+          for (int i = 0; i < 4; i++) {
+            bytes.add(to16(encoded[i]));
+          }
+
+          if (hasParameter(_cmdController.text)) {
+            bytes.add(0x00);
+            int from = int.parse(_cmdController.text[_cmdController.text.length - 1]);
+            bytes.add(to16(from));
+          }
+
+          if (isRequireCrc(_cmdController.text)) {
+            bytes.add(0x3F);
+            bytes.add(0xC7);
+          }
+
+          // List<int> bytes = [];
+          // bytes.add(0x73);
+          // bytes.add(0x74);
+          // bytes.add(0x61);
+          // bytes.add(0x3F);
+          // bytes.add(0x00);
+          // bytes.add(0x01);
+          // bytes.add(0x3F);
+          // bytes.add(0xC7);
+
+          // await characteristics[0].write(bytes, withoutResponse: characteristics[0].properties.writeWithoutResponse);
           if (isReadyCommand(bytes)) {
             await characteristics[0].write(bytes, withoutResponse: characteristics[0].properties.writeWithoutResponse);
           }
@@ -190,7 +211,7 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
             const SizedBox(height: 12),
             Text(
               '$_isNormal',
-              style: TextStyle(fontSize: 20.sp),
+              style: TextStyle(fontSize: 20.sp, color: _isNormal ? Colors.black : Colors.redAccent),
             ),
             const SizedBox(height: 12),
             Text(

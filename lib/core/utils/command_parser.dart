@@ -1,3 +1,5 @@
+import 'package:ble_tutorial/config/engine.dart';
+
 int crc16(List<int> data) {
   int crc = 0xFFFF;
   for (int byte in data) {
@@ -55,5 +57,13 @@ bool isAsciiCharacter(int c) {
 }
 
 bool hasAscii(String command) {
-  return ['ssv', 'srz'].any((word) => command.contains(word));
+  return getAsciiResponseCommandList().any((word) => command.contains(word));
+}
+
+bool isRequireCrc(String command) {
+  return getIncludedCrcCommandList().any((word) => command.contains(word));
+}
+
+bool hasParameter(String command) {
+  return getIncludedParamCommandList().any((word) => command.contains(word));
 }
