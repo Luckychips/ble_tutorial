@@ -28,6 +28,7 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
   late StreamSubscription<List<int>> _lastValueSubscription;
 
   final _cmdController = TextEditingController();
+  final _digit16Controller = TextEditingController();
   bool _isNormal = false;
   String _deviceName = '';
   String _response = '......';
@@ -80,7 +81,7 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
                       _data = '${convertToInt16BigEndian(trimmed)}';
                     }
 
-                    _cmdController.text = '';
+                    // _cmdController.text = '';
                   }
                 });
               }
@@ -176,45 +177,79 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 20.w),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 45,
-              child: TextField(
-                controller: _cmdController,
-                textInputAction: TextInputAction.done,
-                cursorColor: Colors.transparent,
-                textAlign: TextAlign.center,
-                decoration: const InputDecoration(
-                  filled: true,
-                  fillColor: Color(0xffF5FAFF),
-                  enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xffBBC2C9), width: 1.0)),
-                  focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xff00DCA0))),
-                  contentPadding: EdgeInsets.all(30),
+            Column(
+              children: [
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 45,
+                  child: TextField(
+                    controller: _cmdController,
+                    textInputAction: TextInputAction.done,
+                    cursorColor: Colors.transparent,
+                    decoration: const InputDecoration(
+                      filled: true,
+                      fillColor: Color(0xffF5FAFF),
+                      enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xffBBC2C9), width: 1.0)),
+                      focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xff00DCA0))),
+                      contentPadding: EdgeInsets.all(10),
+                    ),
+                    onChanged: (String value) {
+                      String output = '';
+                      List<int> encoded = utf8.encode(value);
+                      for (int i = 0; i < encoded.length; i++) {
+                        output += '${to16With0x(encoded[i])} ';
+                      }
+
+                      _digit16Controller.text = output;
+                    },
+                    onSubmitted: (_) => toListen(),
+                  ),
                 ),
-                onSubmitted: (_) {},
-              ),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: toListen,
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
-                child: Text(
-                  'Send',
-                  style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w300)
+                const SizedBox(height: 6),
+                SizedBox(
+                  height: 45,
+                  child: TextField(
+                    controller: _digit16Controller,
+                    enabled: false,
+                    textInputAction: TextInputAction.done,
+                    cursorColor: Colors.transparent,
+                    decoration: const InputDecoration(
+                      filled: true,
+                      fillColor: Color(0xffF5FAFF),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.all(10),
+                    ),
+                    onSubmitted: (_) {},
+                  ),
                 ),
-              ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: toListen,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
+                    child: Text(
+                        'Send',
+                        style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w300)
+                    ),
+                  ),
+                ),
+              ]
             ),
-            const SizedBox(height: 36),
-            Text(_response, style: TextStyle(fontSize: 20.sp)),
-            const SizedBox(height: 12),
-            Text(
-              '$_isNormal',
-              style: TextStyle(fontSize: 20.sp, color: _isNormal ? Colors.black : Colors.redAccent),
+            Column(
+              children: [
+                Text(_response, style: TextStyle(fontSize: 20.sp)),
+                const SizedBox(height: 12),
+                Text(
+                  '$_isNormal',
+                  style: TextStyle(fontSize: 20.sp, color: _isNormal ? Colors.black : Colors.redAccent),
+                ),
+                const SizedBox(height: 12),
+                Text(_data, style: TextStyle(fontSize: 16.sp)),
+                const SizedBox(height: 24),
+              ],
             ),
-            const SizedBox(height: 12),
-            Text(_data, style: TextStyle(fontSize: 16.sp)),
           ],
         ),
       ),

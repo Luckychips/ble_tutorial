@@ -90,7 +90,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: widget!,
               );
             },
-            home: const Text('Greeting'),
+            home: Container(),
           ),
         ),
       ),
