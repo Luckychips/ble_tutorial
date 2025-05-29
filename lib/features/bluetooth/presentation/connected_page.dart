@@ -29,6 +29,7 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
 
   final _cmdController = TextEditingController();
   bool _isNormal = false;
+  String _deviceName = '';
   String _response = '......';
   String _data = '';
 
@@ -39,6 +40,10 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
       _controller = ref.read(bluetoothDeviceControllerProvider.notifier);
       _firmwareMaintainVersion = _controller.getFirmwareMaintainVersion();
       _device = _controller.getDevice()!;
+      setState(() {
+        _deviceName = _device.platformName;
+      });
+
       _connectionStateSubscription = _device.connectionState.listen((state) async {
         if (state == BluetoothConnectionState.connected) {
           Future.delayed(const Duration(milliseconds: 1500), () async {
@@ -85,9 +90,7 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
           });
         }
 
-        if (state == BluetoothConnectionState.disconnected) {
-
-        }
+        if (state == BluetoothConnectionState.disconnected) {}
       });
     });
   }
@@ -121,24 +124,25 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
     Future.delayed(const Duration(milliseconds: 500), () async {
       BluetoothService? service = await getConnectedService();
       List<BluetoothCharacteristic> characteristics = service!.characteristics;
+      String v = _cmdController.text;
       switch (_firmwareMaintainVersion) {
         case 1:
-          await characteristics[0].write(utf8.encode('${_cmdController.text}@'), withoutResponse: characteristics[0].properties.writeWithoutResponse);
+          await characteristics[0].write(utf8.encode('$v@'), withoutResponse: characteristics[0].properties.writeWithoutResponse);
           break;
         case 2:
-          List<int> encoded = utf8.encode(_cmdController.text);
+          List<int> encoded = utf8.encode(v);
           List<int> bytes = [];
           for (int i = 0; i < 4; i++) {
             bytes.add(to16(encoded[i]));
           }
 
-          if (hasParameter(_cmdController.text)) {
+          if (hasParameter(v)) {
             bytes.add(0x00);
-            int from = int.parse(_cmdController.text[_cmdController.text.length - 1]);
+            int from = int.parse(v[v.length - 1]);
             bytes.add(to16(from));
           }
 
-          if (isRequireCrc(_cmdController.text)) {
+          if (isRequireCrc(v)) {
             bytes.add(0x3F);
             bytes.add(0xC7);
           }
@@ -153,7 +157,6 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
           // bytes.add(0x3F);
           // bytes.add(0xC7);
 
-          // await characteristics[0].write(bytes, withoutResponse: characteristics[0].properties.writeWithoutResponse);
           if (isReadyCommand(bytes)) {
             await characteristics[0].write(bytes, withoutResponse: characteristics[0].properties.writeWithoutResponse);
           }
@@ -168,15 +171,15 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('Connected Page', textAlign: TextAlign.center),
+        title: Text(_deviceName, textAlign: TextAlign.center),
       ),
-      body: Center(
+      body: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 20.w),
         child: Column(
           children: [
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
             SizedBox(
-              width: MediaQuery.of(context).size.width * 0.7,
-              height: 60,
+              height: 45,
               child: TextField(
                 controller: _cmdController,
                 textInputAction: TextInputAction.done,
@@ -192,32 +195,26 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
                 onSubmitted: (_) {},
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
             ElevatedButton(
               onPressed: toListen,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
-                  child: Text(
-                    'Send',
-                    style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w300)
-                  ),
-                )
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
+                child: Text(
+                  'Send',
+                  style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w300)
+                ),
+              ),
             ),
             const SizedBox(height: 36),
-            Text(
-              _response,
-              style: TextStyle(fontSize: 20.sp),
-            ),
+            Text(_response, style: TextStyle(fontSize: 20.sp)),
             const SizedBox(height: 12),
             Text(
               '$_isNormal',
               style: TextStyle(fontSize: 20.sp, color: _isNormal ? Colors.black : Colors.redAccent),
             ),
             const SizedBox(height: 12),
-            Text(
-              _data,
-              style: TextStyle(fontSize: 16.sp)
-            ),
+            Text(_data, style: TextStyle(fontSize: 16.sp)),
           ],
         ),
       ),
