@@ -205,7 +205,7 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
                     onChanged: (String value) {
                       String output = '';
                       List<String> spliced = value.split('?');
-                      if (spliced.isNotEmpty && spliced.length >= 2) {
+                      if (spliced.isNotEmpty && spliced.length >= 2 && spliced[1].isNotEmpty) {
                         int n = int.parse(spliced[1]);
                         List<int> encoded = utf8.encode(spliced[0]);
                         for (int i = 0; i < encoded.length; i++) {
