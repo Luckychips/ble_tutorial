@@ -204,9 +204,21 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
                     ),
                     onChanged: (String value) {
                       String output = '';
-                      List<int> encoded = utf8.encode(value);
-                      for (int i = 0; i < encoded.length; i++) {
-                        output += '${to16With0x(encoded[i])} ';
+                      List<String> spliced = value.split('?');
+                      if (spliced.isNotEmpty && spliced.length >= 2) {
+                        int n = int.parse(spliced[1]);
+                        List<int> encoded = utf8.encode(spliced[0]);
+                        for (int i = 0; i < encoded.length; i++) {
+                          output += '${to16With0x(encoded[i])} ';
+                        }
+
+                        output += '0x00 ';
+                        output += '${to16With0x(n)} ';
+                      } else {
+                        List<int> encoded = utf8.encode(value);
+                        for (int i = 0; i < encoded.length; i++) {
+                          output += '${to16With0x(encoded[i])} ';
+                        }
                       }
 
                       _digit16Controller.text = output;
