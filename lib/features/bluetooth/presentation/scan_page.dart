@@ -38,7 +38,7 @@ class _ScanPageState extends ConsumerState<ScanPage> {
   late bool _isScanning = false;
 
   final v1List = ['bladder', 'medi'];
-  final v2List = ['2025aamay099', '2025aamay002'];
+  final v2List = ['2025aamay099', '2025aamay002', '2025aaaaa000'];
 
   // final regex = RegExp(
   //   r'^[0-9]{4}[A-Z]{2}(January|February|March|April|May|June|July|August|September|October|November|December)[0-9]{3}$',

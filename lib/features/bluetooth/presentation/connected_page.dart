@@ -131,35 +131,42 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
           await characteristics[0].write(utf8.encode('$v@'), withoutResponse: characteristics[0].properties.writeWithoutResponse);
           break;
         case 2:
-          List<int> encoded = utf8.encode(v);
-          List<int> bytes = [];
-          for (int i = 0; i < 4; i++) {
-            bytes.add(to16(encoded[i]));
-          }
+          try {
+            List<int> encoded = utf8.encode(v);
+            List<int> bytes = [];
+            for (int i = 0; i < 4; i++) {
+              bytes.add(to16(encoded[i]));
+            }
 
-          if (hasParameter(v)) {
-            bytes.add(0x00);
-            int from = int.parse(v[v.length - 1]);
-            bytes.add(to16(from));
-          }
+            if (hasParameter(v)) {
+              List<String> spliced = v.split('?');
+              if (spliced.isNotEmpty && spliced.length >= 2) {
+                int n = int.parse(spliced[1]);
+                bytes.add(0x00);
+                bytes.add(to16(n));
+              }
+            }
 
-          if (isRequireCrc(v)) {
-            bytes.add(0x3F);
-            bytes.add(0xC7);
-          }
+            if (isRequireCrc(v)) {
+              bytes.add(0x3F);
+              bytes.add(0xC7);
+            }
 
-          // List<int> bytes = [];
-          // bytes.add(0x73);
-          // bytes.add(0x74);
-          // bytes.add(0x61);
-          // bytes.add(0x3F);
-          // bytes.add(0x00);
-          // bytes.add(0x01);
-          // bytes.add(0x3F);
-          // bytes.add(0xC7);
+            // List<int> bytes = [];
+            // bytes.add(0x73);
+            // bytes.add(0x74);
+            // bytes.add(0x61);
+            // bytes.add(0x3F);
+            // bytes.add(0x00);
+            // bytes.add(0x01);
+            // bytes.add(0x3F);
+            // bytes.add(0xC7);
 
-          if (isReadyCommand(bytes)) {
-            await characteristics[0].write(bytes, withoutResponse: characteristics[0].properties.writeWithoutResponse);
+            if (isReadyCommand(bytes)) {
+              await characteristics[0].write(bytes, withoutResponse: characteristics[0].properties.writeWithoutResponse);
+            }
+          } catch (e) {
+            print(e);
           }
 
           break;
