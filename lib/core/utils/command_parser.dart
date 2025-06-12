@@ -52,6 +52,18 @@ List<int> convertToInt16BigEndian(List<int> bytes) {
   return result;
 }
 
+List<int> convertToBigEndianInt16(int number) {
+  if (number < 0 || number > 0xFFFF) {
+    throw ArgumentError('Value must be between 0 and 65535 (2 bytes).');
+  }
+
+  int highByte = (number >> 8) & 0xFF;
+  int lowByte = number & 0xFF;
+  // String highHex = highByte.toRadixString(16).padLeft(2, '0').toUpperCase();
+  // String lowHex = lowByte.toRadixString(16).padLeft(2, '0').toUpperCase();
+  return [highByte, lowByte];
+}
+
 bool isAsciiCharacter(int c) {
   return c >= 0 && c <= 127;
 }
@@ -66,4 +78,8 @@ bool isRequireCrc(String command) {
 
 bool hasParameter(String command) {
   return getIncludedParamCommandList().any((word) => command.contains(word));
+}
+
+bool hasTransferValue(String command) {
+  return getIncludedValueCommandList().any((word) => command.contains(word));
 }

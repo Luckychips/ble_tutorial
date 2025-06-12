@@ -139,11 +139,34 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
             }
 
             if (hasParameter(v)) {
-              List<String> spliced = v.split('?');
-              if (spliced.isNotEmpty && spliced.length >= 2) {
-                int n = int.parse(spliced[1]);
-                bytes.add(0x00);
-                bytes.add(to16(n));
+              List<String> text = v.split('?');
+              if (text.isNotEmpty && text.length >= 2) {
+                String parameter = text[1];
+                int n = -1;
+                if (hasTransferValue(v)) {
+                  List<String> transfer = parameter.split(',');
+                  n = int.parse(transfer[0]);
+                } else {
+                  n = int.parse(parameter);
+                }
+
+                if (n >= 0) {
+                  bytes.add(0x00);
+                  bytes.add(to16(n));
+                }
+
+                if (hasTransferValue(v)) {
+                  List<String> transfer = parameter.split(',');
+                  int value = int.parse(transfer[1]);
+                  bytes.addAll(convertToBigEndianInt16(value));
+                }
+              }
+            } else {
+              if (hasTransferValue(v)) {
+                List<String> text = v.split('?');
+                bytes.addAll(convertToBigEndianInt16(int.parse(text[1])));
+                // bytes.add(0x00);
+                // bytes.add((int.parse(text[1])));
               }
             }
 
@@ -162,6 +185,23 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
             // bytes.add(0x3F);
             // bytes.add(0xC7);
 
+            // 7373 663f 002f 03e8 c82d
+            // [115, 115, 102, 63, 0, 47, 3, 232, 200, 45]
+            // 47, 1000
+            // List<int> bytes = [];
+            // bytes.add(0x73);
+            // bytes.add(0x73);
+            // bytes.add(0x66);
+            // bytes.add(0x3F);
+            // bytes.add(0x00);
+            // bytes.add(0x2F);
+            // bytes.add(0x03);
+            // bytes.add(0xE8);
+            // bytes.add(0xC8);
+            // bytes.add(0x2D);
+            // await characteristics[0].write(bytes, withoutResponse: characteristics[0].properties.writeWithoutResponse);
+
+            // [115, 115, 102, 63, 0, 47, 3, 232, 200, 45]
             if (isReadyCommand(bytes)) {
               await characteristics[0].write(bytes, withoutResponse: characteristics[0].properties.writeWithoutResponse);
             }
@@ -204,16 +244,22 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
                     ),
                     onChanged: (String value) {
                       String output = '';
-                      List<String> spliced = value.split('?');
-                      if (spliced.isNotEmpty && spliced.length >= 2 && spliced[1].isNotEmpty) {
-                        int n = int.parse(spliced[1]);
-                        List<int> encoded = utf8.encode(spliced[0]);
-                        for (int i = 0; i < encoded.length; i++) {
-                          output += '${to16With0x(encoded[i])} ';
-                        }
+                      List<String> text = value.split('?');
+                      if (text.isNotEmpty && text.length >= 2) {
+                        List<int> encoded = utf8.encode(text[0]);
+                        String parameter = text[1];
+                        if (parameter.isNotEmpty) {
+                          if (hasTransferValue(value)) {
+                          } else {
+                            int n = int.parse(parameter);
+                            for (int i = 0; i < encoded.length; i++) {
+                              output += '${to16With0x(encoded[i])} ';
+                            }
 
-                        output += '0x00 ';
-                        output += '${to16With0x(n)} ';
+                            output += '0x00 ';
+                            output += '${to16With0x(n)} ';
+                          }
+                        }
                       } else {
                         List<int> encoded = utf8.encode(value);
                         for (int i = 0; i < encoded.length; i++) {
@@ -249,8 +295,8 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
                   child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
                     child: Text(
-                        'Send',
-                        style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w300)
+                      'Send',
+                      style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w300)
                     ),
                   ),
                 ),
