@@ -171,8 +171,8 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
             }
 
             if (isRequireCrc(v)) {
-              bytes.add(0x3F);
-              bytes.add(0xC7);
+              List<int> codes = calculateCrc16(bytes);
+              bytes.addAll(codes);
             }
 
             // List<int> bytes = [];

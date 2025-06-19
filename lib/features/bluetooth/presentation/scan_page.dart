@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 // this
+import 'package:ble_tutorial/config/engine.dart';
 import 'package:ble_tutorial/core/utils/debug_logger.dart';
 import 'package:ble_tutorial/features/bluetooth/application/bluetooth_device_controller.dart';
 import 'package:ble_tutorial/features/bluetooth/presentation/connected_page.dart';
@@ -37,9 +38,6 @@ class _ScanPageState extends ConsumerState<ScanPage> {
   late StreamSubscription<bool> _isScanningSubscription;
   late bool _isScanning = false;
 
-  final v1List = ['bladder', 'medi'];
-  final v2List = ['2025aamay099', '2025aamay002', '2025aaaaa000'];
-
   // final regex = RegExp(
   //   r'^[0-9]{4}[A-Z]{2}(January|February|March|April|May|June|July|August|September|October|November|December)[0-9]{3}$',
   //   caseSensitive: false,
@@ -55,7 +53,7 @@ class _ScanPageState extends ConsumerState<ScanPage> {
         for (var x in peripheral) {
           BluetoothDevice device = x.device;
           String deviceName = device.platformName.toLowerCase();
-          if (v1List.any(deviceName.contains) || v2List.any(deviceName.contains)) {
+          if (getFirstVersionNames().any(deviceName.contains) || getSecondVersionNames().any(deviceName.contains)) {
             if (_scanResults.indexWhere((element) => element.device.remoteId == x.device.remoteId) < 0) {
               _scanResults.add(x);
             }
@@ -117,9 +115,9 @@ class _ScanPageState extends ConsumerState<ScanPage> {
       if (mounted) {
         setState(() {
           String deviceName = d.platformName.toLowerCase();
-          if (v1List.any(deviceName.contains)) {
+          if (getFirstVersionNames().any(deviceName.contains)) {
             controller.setFirmwareMaintainVersion(1);
-          } else if (v2List.any(deviceName.contains)) {
+          } else if (getSecondVersionNames().any(deviceName.contains)) {
             controller.setFirmwareMaintainVersion(2);
           }
 

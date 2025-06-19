@@ -18,6 +18,24 @@ int crc16(List<int> data) {
   return crc;
 }
 
+List<int> calculateCrc16(List<int> data) {
+  int crc = 0xFFFF;
+  for (var byte in data) {
+    crc ^= (byte << 8);
+    for (int i = 0; i < 8; i++) {
+      if ((crc & 0x8000) != 0) {
+        crc = (crc << 1) ^ 0x1021;
+      } else {
+        crc <<= 1;
+      }
+
+      crc &= 0xFFFF;
+    }
+  }
+
+  return [crc & 0xFF, (crc >> 8) & 0xFF];
+}
+
 bool isReadyCommand(List<int> bytes) {
   return bytes.length >= 4 && String.fromCharCode(bytes[0]) == 's' && String.fromCharCode(bytes[3]) == '?';
 }
