@@ -5,7 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ble_tutorial/features/bluetooth/domain/bluetooth_device_model.dart';
 
 class BluetoothDeviceController extends StateNotifier<BluetoothDeviceModel> {
-  BluetoothDeviceController() : super(BluetoothDeviceModel(device: null, firmwareMaintainVersion: 1));
+  BluetoothDeviceController() : super(BluetoothDeviceModel(remoteId: null, device: null, firmwareMaintainVersion: 1));
+
+  void setDeviceRemoteId(String remoteId) {
+    state = state.copyWith(remoteId: remoteId);
+  }
 
   void setDevice(BluetoothDevice d) {
     state = state.copyWith(device: d);
@@ -13,6 +17,10 @@ class BluetoothDeviceController extends StateNotifier<BluetoothDeviceModel> {
 
   void setFirmwareMaintainVersion(int v) {
     state = state.copyWith(firmwareMaintainVersion: v);
+  }
+
+  String? getDeviceRemoteId() {
+    return state.remoteId;
   }
 
   BluetoothDevice? getDevice() {

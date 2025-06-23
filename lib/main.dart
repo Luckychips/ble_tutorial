@@ -3,12 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 // this
+import 'package:ble_tutorial/core/domains/core_model.dart';
 import 'package:ble_tutorial/features/entry/presentation/pager_page.dart';
 import 'package:ble_tutorial/features/entry/presentation/screen_page.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+  Hive.registerAdapter(CoreModelAdapter());
+  await Hive.openBox<CoreModel>('core');
   FlutterBluePlus.setLogLevel(LogLevel.verbose, color: true);
   runApp(const ProviderScope(child: MyApp()));
 }

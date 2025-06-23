@@ -34,6 +34,8 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
   String _response = '......';
   String _data = '';
 
+  String _state = '';
+
   @override
   void initState() {
     super.initState();
@@ -47,6 +49,9 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
 
       _connectionStateSubscription = _device.connectionState.listen((state) async {
         if (state == BluetoothConnectionState.connected) {
+          setState(() {
+            _state = 'connect!';
+          });
           Future.delayed(const Duration(milliseconds: 1500), () async {
             BluetoothService? service = await getConnectedService();
             List<BluetoothCharacteristic> characteristics = service!.characteristics;
@@ -91,7 +96,11 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
           });
         }
 
-        if (state == BluetoothConnectionState.disconnected) {}
+        if (state == BluetoothConnectionState.disconnected) {
+          setState(() {
+            _state = 'disconnect';
+          });
+        }
       });
     });
   }
@@ -121,11 +130,11 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
     return service;
   }
 
-  void toListen() {
+  Future<void> toListen(String v) async {
     Future.delayed(const Duration(milliseconds: 500), () async {
       BluetoothService? service = await getConnectedService();
       List<BluetoothCharacteristic> characteristics = service!.characteristics;
-      String v = _cmdController.text;
+      // String v = _cmdController.text;
       switch (_firmwareMaintainVersion) {
         case 1:
           await characteristics[0].write(utf8.encode('$v@'), withoutResponse: characteristics[0].properties.writeWithoutResponse);
@@ -269,7 +278,7 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
 
                       _digit16Controller.text = output;
                     },
-                    onSubmitted: (_) => toListen(),
+                    onSubmitted: (_) => toListen(_cmdController.text),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -291,7 +300,7 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton(
-                  onPressed: toListen,
+                  onPressed: () => toListen(_cmdController.text),
                   child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
                     child: Text(
@@ -300,10 +309,47 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: () async {
+                    toListen('sst?');
+                    await Future.delayed(const Duration(milliseconds: 1500));
+                    await toListen('ssn?');
+                    await Future.delayed(const Duration(milliseconds: 1500));
+                    await toListen('sta?1');
+                    await Future.delayed(const Duration(milliseconds: 1500));
+                    await toListen('ssk?8');
+                    await Future.delayed(const Duration(milliseconds: 1500));
+                    await toListen('ssl?5000');
+                    await Future.delayed(const Duration(milliseconds: 1500));
+                    await toListen('sta?0');
+                  },
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
+                    child: Text(
+                      'Initialize',
+                      style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w300)
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+
+                  },
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
+                    child: Text(
+                      'Optimize',
+                      style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w300)
+                    ),
+                  ),
+                ),
               ]
             ),
             Column(
               children: [
+                Text(_state),
+                const SizedBox(height: 12),
                 Text(_response, style: TextStyle(fontSize: 20.sp)),
                 const SizedBox(height: 12),
                 Text(
