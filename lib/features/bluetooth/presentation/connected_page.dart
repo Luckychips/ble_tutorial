@@ -332,6 +332,7 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 12),
                 ElevatedButton(
                   onPressed: () {
 

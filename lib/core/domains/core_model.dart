@@ -7,5 +7,8 @@ class CoreModel extends HiveObject {
   @HiveField(0)
   String? remoteId;
 
-  CoreModel({ required this.remoteId });
+  @HiveField(1)
+  int? deviceVersion;
+
+  CoreModel({ required this.remoteId, required this.deviceVersion });
 }

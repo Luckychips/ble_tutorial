@@ -36,7 +36,7 @@ class ScanPage extends ConsumerStatefulWidget {
 class _ScanPageState extends ConsumerState<ScanPage> {
   final Box<CoreModel> coreBox = Hive.box<CoreModel>('core');
 
-  late BluetoothDeviceController controller;
+  late BluetoothDeviceController _controller;
   late List<ScanResult> _scanResults = [];
   late StreamSubscription<List<ScanResult>> _scanResultsSubscription;
   late StreamSubscription<bool> _isScanningSubscription;
@@ -50,9 +50,23 @@ class _ScanPageState extends ConsumerState<ScanPage> {
   @override
   void initState() {
     super.initState();
-    controller = ref.read(bluetoothDeviceControllerProvider.notifier);
-    dynamic scanned = coreBox.get('scanned');
-    print('scanned : ${scanned.remoteId}');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        _controller = ref.read(bluetoothDeviceControllerProvider.notifier);
+        CoreModel scanned = coreBox.get('scanned') as CoreModel;
+        if (scanned.remoteId != null) {
+          _controller.setDeviceRemoteId(scanned.remoteId.toString());
+          BluetoothDevice d = BluetoothDevice.fromId(scanned.remoteId.toString());
+          toConnect(d).then((isConnected) async {
+            if (mounted && isConnected) {
+              _controller.setDevice(d);
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ConnectedPage()));
+            }
+          });
+        }
+      } catch (e) {}
+    });
+
     _scanResultsSubscription = FlutterBluePlus.scanResults.listen((peripheral) async {
       _scanResults.clear();
       if (peripheral.isNotEmpty) {
@@ -121,16 +135,21 @@ class _ScanPageState extends ConsumerState<ScanPage> {
       if (mounted) {
         setState(() {
           String deviceName = d.platformName.toLowerCase();
+          int deviceVersion = 0;
           if (getFirstVersionNames().any(deviceName.contains)) {
-            controller.setFirmwareMaintainVersion(1);
+            deviceVersion = 1;
           } else if (getSecondVersionNames().any(deviceName.contains)) {
-            controller.setFirmwareMaintainVersion(2);
+            deviceVersion = 2;
           }
 
-          final model = CoreModel(remoteId: d.remoteId.str);
-          coreBox.put('scanned', model);
-          controller.setDeviceRemoteId(d.remoteId.str);
-          controller.setDevice(d);
+          if (deviceVersion > 0) {
+            _controller.setFirmwareMaintainVersion(deviceVersion);
+            final model = CoreModel(remoteId: d.remoteId.str, deviceVersion: deviceVersion);
+            coreBox.put('scanned', model);
+          }
+
+          _controller.setDeviceRemoteId(d.remoteId.str);
+          _controller.setDevice(d);
         });
 
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ConnectedPage()));
@@ -185,7 +204,7 @@ class _ScanPageState extends ConsumerState<ScanPage> {
                 final device = _scanResults[index].device;
                 return ListTile(
                   title: Text(device.platformName.isEmpty ? 'Unknown Device' : device.platformName),
-                  subtitle: Text(device.id.toString()),
+                  subtitle: Text(device.remoteId.str.toString()),
                   onTap: () async {
                     try {
                       select(device);
