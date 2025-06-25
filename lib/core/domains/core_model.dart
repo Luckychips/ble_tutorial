@@ -1,5 +1,6 @@
+//lib
 import 'package:hive/hive.dart';
-
+//generated
 part 'core_model.g.dart';
 
 @HiveType(typeId: 0)

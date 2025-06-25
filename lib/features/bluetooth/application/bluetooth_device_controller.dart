@@ -1,7 +1,7 @@
-// lib
+//lib
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// this
+//this
 import 'package:ble_tutorial/features/bluetooth/domain/bluetooth_device_model.dart';
 
 class BluetoothDeviceController extends StateNotifier<BluetoothDeviceModel> {

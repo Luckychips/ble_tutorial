@@ -1,13 +1,16 @@
-// core
+//core
 import 'dart:async';
 import 'dart:convert';
-// lib
+//lib
 import 'package:ble_tutorial/features/bluetooth/application/bluetooth_device_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-// this
+import 'package:hive_flutter/hive_flutter.dart';
+//this
+import 'package:ble_tutorial/core/domains/core_model.dart';
+import 'package:ble_tutorial/core/mixins/patch_connect_listener.dart';
 import 'package:ble_tutorial/core/utils/command_parser.dart';
 import 'package:ble_tutorial/core/utils/to_number.dart';
 import 'package:ble_tutorial/features/bluetooth/provider.dart';
@@ -19,13 +22,17 @@ class ConnectedPage extends ConsumerStatefulWidget {
   ConsumerState<ConnectedPage> createState() => _ConnectedPageState();
 }
 
-class _ConnectedPageState extends ConsumerState<ConnectedPage> {
+class _ConnectedPageState extends ConsumerState<ConnectedPage> with PatchConnectListener {
+  final Box<CoreModel> coreBox = Hive.box<CoreModel>('core');
   static const String suid = '6E400001-B5A3-F393-E0A9-E50E24DCCA9E'; // nordic uart service uuid
   late BluetoothDeviceController _controller;
   late int _firmwareMaintainVersion;
   late BluetoothDevice _device;
+  late String _remoteId;
   late StreamSubscription<BluetoothConnectionState> _connectionStateSubscription;
   late StreamSubscription<List<int>> _lastValueSubscription;
+
+  late List<int> codeUnits = [];
 
   final _cmdController = TextEditingController();
   final _digit16Controller = TextEditingController();
@@ -41,8 +48,20 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
     super.initState();
     Future.microtask(() {
       _controller = ref.read(bluetoothDeviceControllerProvider.notifier);
-      _firmwareMaintainVersion = _controller.getFirmwareMaintainVersion();
-      _device = _controller.getDevice()!;
+      // _firmwareMaintainVersion = _controller.getFirmwareMaintainVersion();
+      // _device = _controller.getDevice()!;
+      // setState(() {
+      //   _deviceName = _device.platformName;
+      // });
+
+      CoreModel scanned = coreBox.get('scanned') as CoreModel;
+      _firmwareMaintainVersion = scanned.deviceVersion!;
+      _remoteId = scanned.remoteId!;
+      _device = BluetoothDevice.fromId(scanned.remoteId.toString());
+      reconnect(_remoteId, () {
+        _state = 'connect';
+      });
+
       setState(() {
         _deviceName = _device.platformName;
       });
@@ -77,7 +96,14 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
                     _response = messages[0];
                   }
 
-                  if (isNormalReceived(_cmdController.text.codeUnits, value)) {
+                  List<int> inputs = [];
+                  if (_cmdController.text.isEmpty) {
+                    inputs = codeUnits;
+                  } else {
+                    inputs = _cmdController.text.codeUnits;
+                  }
+
+                  if (isNormalReceived(inputs, value)) {
                     _isNormal = true;
                     final List<int> trimmed = value.sublist(4, value.length - 2);
                     if (hasAscii(_cmdController.text)) {
@@ -131,6 +157,7 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
   }
 
   Future<void> toListen(String v) async {
+    codeUnits = v.codeUnits;
     Future.delayed(const Duration(milliseconds: 500), () async {
       BluetoothService? service = await getConnectedService();
       List<BluetoothCharacteristic> characteristics = service!.characteristics;
@@ -300,7 +327,11 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton(
-                  onPressed: () => toListen(_cmdController.text),
+                  onPressed: () {
+                    if (_cmdController.text.isNotEmpty) {
+                      toListen(_cmdController.text);
+                    }
+                  },
                   child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),
                     child: Text(
@@ -334,8 +365,20 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> {
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton(
-                  onPressed: () {
-
+                  onPressed: () async {
+                    toListen('sst?');
+                    await Future.delayed(const Duration(milliseconds: 1500));
+                    await toListen('sta?1');
+                    await Future.delayed(const Duration(milliseconds: 1500));
+                    for (int i = 0; i < 48; i++) {
+                      await toListen('ssb?$i,155');
+                      await Future.delayed(const Duration(milliseconds: 1500));
+                    }
+                    await toListen('ssn?');
+                    await Future.delayed(const Duration(milliseconds: 1500));
+                    await toListen('sag?');
+                    await Future.delayed(const Duration(milliseconds: 1500));
+                    await toListen('sta?0');
                   },
                   child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 15.h),

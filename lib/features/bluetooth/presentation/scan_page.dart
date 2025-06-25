@@ -1,17 +1,18 @@
-// core
+//core
 import 'dart:async';
 import 'dart:io';
-// lib
+//lib
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:loading_indicator/loading_indicator.dart';
-// this
+//this
 import 'package:ble_tutorial/config/engine.dart';
 import 'package:ble_tutorial/core/domains/core_model.dart';
 import 'package:ble_tutorial/core/utils/debug_logger.dart';
+import 'package:ble_tutorial/core/utils/device_communication.dart';
 import 'package:ble_tutorial/features/bluetooth/application/bluetooth_device_controller.dart';
 import 'package:ble_tutorial/features/bluetooth/presentation/connected_page.dart';
 import 'package:ble_tutorial/features/bluetooth/provider.dart';
@@ -96,38 +97,6 @@ class _ScanPageState extends ConsumerState<ScanPage> {
     _isScanningSubscription.cancel();
     super.dispose();
   }
-
-  Future<bool> toConnect(BluetoothDevice d) async {
-    bool isConnected = false;
-    try {
-      await d.connect(mtu: null, timeout: const Duration(hours: 10));
-      List<BluetoothService> discoverList = await d.discoverServices();
-      if (discoverList.isNotEmpty) {
-        isConnected = true;
-      }
-    } catch (e) {
-      isConnected = false;
-    }
-
-    return isConnected;
-  }
-
-  Future<bool> toBonding(BluetoothDevice d) async {
-    bool isBonded = false;
-    if (Platform.isAndroid) {
-      try {
-        await d.createBond();
-        isBonded = true;
-      } catch (e) {
-        isBonded = false;
-      }
-    } else {
-      isBonded = true;
-    }
-
-    return isBonded;
-  }
-
 
   void select(BluetoothDevice d) async {
     await FlutterBluePlus.stopScan();
