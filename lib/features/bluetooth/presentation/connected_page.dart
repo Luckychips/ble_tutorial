@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 //this
+import 'package:ble_tutorial/config/engine.dart';
 import 'package:ble_tutorial/core/domains/core_model.dart';
 import 'package:ble_tutorial/core/mixins/patch_connect_listener.dart';
 import 'package:ble_tutorial/core/utils/command_parser.dart';
@@ -113,6 +114,12 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> with PatchConnect
                     }
 
                     // _cmdController.text = '';
+                  } else {
+                    final List<int> trimmed = value.sublist(4, value.length - 2);
+                    final List<int> errorCodes = convertToInt16BigEndian(trimmed);
+                    if (errorCodes.isNotEmpty) {
+                      _data = getErrorMessage(errorCodes[0]);
+                    }
                   }
                 });
               }
@@ -209,6 +216,8 @@ class _ConnectedPageState extends ConsumerState<ConnectedPage> with PatchConnect
             if (isRequireCrc(v)) {
               List<int> codes = calculateCrc16(bytes);
               bytes.addAll(codes);
+              // bytes.add(0x3F);
+              // bytes.add(0xC7);
             }
 
             // List<int> bytes = [];

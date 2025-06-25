@@ -33,6 +33,7 @@ mixin PatchConnectListener<T extends StatefulWidget> on State<T> {
 
     connectionSubscription ??= connectedDevice.connectionState.listen((state) async {
       if (state == BluetoothConnectionState.disconnected) {
+        Fluttertoast.showToast(msg: '장치와의 접속이 끊어졌습니다.');
         isConnected = false;
         await connectedDevice.disconnect();
         Future.delayed(const Duration(seconds: 5), () => reconnect(remoteId, callback));
